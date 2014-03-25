@@ -1,67 +1,75 @@
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-
+import java.util.Arrays;
 
 public class Fast {
-
-	private static List<Point> readList(String fileName) throws IOException {
-		Scanner input = new Scanner(new File(fileName));
-		int numPoints = input.nextInt();
-		List<Point> points = new ArrayList<Point>();
-		for(int i=0;i<numPoints;i++) {
-			int x = input.nextInt();
-			int y = input.nextInt();
-			Point point = new Point(x, y);
-			points.add(point);
-		}
-		input.close();
-		return points;
-	}
-
-	public static void main(String[] args) throws IOException {
-		String fileName = args[0];
-		List<Point> points = readList(fileName); 
-		Collections.sort(points);
-		StdDraw.setXscale(0, 32768);
-		StdDraw.setYscale(0, 32768);
-		for(int i=0;i<points.size();i++) points.get(i).draw();
-        Map<String, Boolean> printedMap = new HashMap<String, Boolean>();
-        for(int i=0;i<points.size();i++) {
-        	List<Point> tmpPoints = new ArrayList<Point>();
-        	for(int j=i+1;j<points.size();j++) tmpPoints.add(points.get(j));
-    		Collections.sort(tmpPoints, points.get(i).SLOPE_ORDER);
-    		for(int j=0;j<tmpPoints.size();){
-        		double slote = points.get(i).slopeTo(tmpPoints.get(j));
-    			List<Point> nList = new ArrayList<Point>(); 
-    			nList.add(points.get(i)); nList.add(tmpPoints.get(j));
-    			j++;
-    			while(j<tmpPoints.size() && points.get(i).slopeTo(tmpPoints.get(j))==slote) {
-    				nList.add(tmpPoints.get(j));
-    				j ++;
-        		} 
-        		if(nList.size()>=4) {
-        			boolean printedFlag = false;
-        			for(int k=0;k<nList.size()-1;k++) {
-        				String seg = nList.get(k).toString()+","+nList.get(k+1).toString();
-        				if(!printedMap.containsKey(seg)) {
-        					printedMap.put(seg, true);
-        					printedFlag = true;
-        				}
-        			}
-        			if(printedFlag){
-						Collections.sort(nList);
-						for(int k=0;k<nList.size()-1;k++) System.out.print(nList.get(k)+" -> ");
-						System.out.print(nList.get(nList.size()-1)+"\n");
-						points.get(i).drawTo(nList.get(nList.size()-1));
-        			}
-        		}
-        	}
+	public static void main(String[] args){
+		// re-scaling coordinates and turn on animation mode
+        StdDraw.setXscale(0, 32768);
+        StdDraw.setYscale(0, 32768);
+        
+		String filename = args[0];
+        In in = new In(filename);
+        int N = in.readInt();
+        if (N < 4){
+        	return;
         }
+        Point[] pointArray = new Point[N];
+        for (int i = 0; i < N; i++) {
+            int x = in.readInt();
+            int y = in.readInt();
+            Point p = new Point(x, y);
+            pointArray[i] = p;
+            p.draw();
+        }
+        Quick3way.sort(pointArray);
+        FastMethod(pointArray);
+        StdDraw.show(0);
+    }
+	
+	private static void FastMethod(Point[] pointArray){
+		int N = pointArray.length;
+		for (int i=0; i<N; i++){
+			Point origPoint = pointArray[i];
+			Point[] otherPoint = new Point[N-1];
+			for (int j=0; j<pointArray.length; j++){
+				if (j < i) otherPoint[j] = pointArray[j];
+				if (j > i) otherPoint[j-1] = pointArray[j];
+			}
+			Arrays.sort(otherPoint, origPoint.SLOPE_ORDER);
+			
+			int count = 0;
+			int index = 0;
+			double tempSlope = origPoint.slopeTo(otherPoint[0]);
+			for (int j=0; j<otherPoint.length;j++){
+				if (Double.compare(origPoint.slopeTo(otherPoint[j]),  tempSlope) == 0){
+					count++;
+					continue;
+				}else{
+					if (count >=3){
+						if (otherPoint[index].compareTo(origPoint) >=0){
+							StdOut.print(origPoint + " -> ");
+							for (int k=index; k<j-1; k++){
+								StdOut.print(otherPoint[k] + " -> ");
+							}
+							StdOut.println(otherPoint[j-1]);
+							origPoint.drawTo(otherPoint[j-1]);
+						}
+					}
+					count = 1;
+					index = j;
+					tempSlope = origPoint.slopeTo(otherPoint[j]);
+				}
+			}
+			if (count >= 3){
+				if (otherPoint[index].compareTo(origPoint) >= 0){
+					StdOut.print(origPoint + " -> ");
+					for (int k=index; k<otherPoint.length - 1; k++){
+						StdOut.print(otherPoint[k] + " -> ");
+					}
+					StdOut.println(otherPoint[otherPoint.length-1]);
+					origPoint.drawTo(otherPoint[otherPoint.length-1]);
+				}
+			}
+		}
+		StdDraw.show(0);
 	}
 }
